@@ -483,7 +483,7 @@ def main():
 
     # Training config
     parser.add_argument('--n_epochs', default=1, type=int)
-    parser.add_argument('--wavelength_batch_size', default=14, type=int, help="Number of wavelengths per microbatch per rank.")
+    parser.add_argument('--wvl_batch_size', default=14, type=int, help="Number of wavelengths per microbatch per rank.")
     parser.add_argument('--optics_layer_lr', default=0.1, type=float)
     parser.add_argument('--optics_class_lr', default=0.05, type=float)
     parser.add_argument('--weight_decay', default=0.0, type=float)
