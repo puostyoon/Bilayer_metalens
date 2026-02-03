@@ -358,6 +358,43 @@ def shard_wavelengths(wvls, rank, world_size):
     return wvls_local, len(wvls)
 
 
+def sample_wavelengths_for_step(all_wvls, wvl_stride, step, base_seed=1234):
+    """
+    Randomly sample wavelengths for a training step based on wvl_stride.
+    
+    Args:
+        all_wvls: Full list of training wavelengths
+        wvl_stride: Sampling stride (1=all, 2=half, 5=1/5, etc.)
+                    Determines how many wavelengths to sample per step.
+        step: Current training step (used for deterministic seeding)
+        base_seed: Base random seed for reproducibility
+    
+    Returns:
+        List of sampled wavelengths for this step
+    
+    Example:
+        all_wvls = [450, 451, ..., 650] (201 wavelengths)
+        wvl_stride=1 -> sample all 201 wavelengths (no subsampling)
+        wvl_stride=2 -> randomly sample 101 wavelengths this step
+        wvl_stride=5 -> randomly sample 41 wavelengths this step
+        
+    Note: Different steps sample different random subsets, so over many
+    steps all wavelengths get trained on, but each step is faster.
+    """
+    if wvl_stride <= 1:
+        return list(all_wvls)
+    
+    n_total = len(all_wvls)
+    n_sample = max(1, n_total // wvl_stride)
+    
+    # Deterministic random sampling based on step
+    rng = np.random.RandomState(base_seed + step)
+    indices = rng.choice(n_total, size=n_sample, replace=False)
+    indices = np.sort(indices)  # Keep wavelengths in order
+    
+    return [all_wvls[i] for i in indices]
+
+
 def train(args, local_rank):
     """
     DDP-enabled training function.
@@ -464,14 +501,18 @@ def train(args, local_rank):
         optimizer, T_max=args.T_max, eta_min=min(args.optics_layer_lr, args.optics_class_lr) * 0.01
     )
 
-    # ----- Wavelength sharding setup -----
-    # Each rank processes a disjoint subset of wavelengths
+    # ----- Wavelength setup -----
+    # Store full wavelength list; actual sampling happens per-step based on wvl_stride
     all_training_wvls = list(param.training_wvls)
-    local_training_wvls, total_wvls = shard_wavelengths(all_training_wvls, rank, world_size)
+    n_full = len(all_training_wvls)
+    n_per_step = max(1, n_full // args.wvl_stride) if args.wvl_stride > 1 else n_full
 
     if is_main_process():
         print(f"[DDP] World size: {world_size}")
-        print(f"[DDP] Total wavelengths: {total_wvls}, per-rank: ~{len(local_training_wvls)}")
+        print(f"[DDP] Wavelength stride: {args.wvl_stride}")
+        print(f"[DDP] Full wavelengths: {n_full}, per-step sample: ~{n_per_step}, per-rank: ~{n_per_step // world_size}")
+        if args.wvl_stride > 1:
+            print(f"[DDP] Note: Each step randomly samples {n_per_step} wavelengths from full set")
 
     total_step = 0
     eval_minimum_loss = float("inf")
@@ -510,6 +551,14 @@ def train(args, local_rank):
 
             optimizer.zero_grad(set_to_none=True)
 
+            # ----- Per-step wavelength sampling with wvl_stride -----
+            # Sample a random subset of wavelengths for this step (same across all ranks)
+            step_wvls = sample_wavelengths_for_step(
+                all_training_wvls, args.wvl_stride, total_step, base_seed=args.seed
+            )
+            # Shard the sampled wavelengths across ranks
+            local_training_wvls, _ = shard_wavelengths(step_wvls, rank, world_size)
+            
             # ----- Wavelength microbatching with DDP no_sync -----
             # Each rank processes its local wavelength subset
             # Use no_sync() for all but the last microbatch to avoid expensive allreduce per microbatch
@@ -642,6 +691,10 @@ def main():
     # Training config
     parser.add_argument('--n_epochs', default=1, type=int)
     parser.add_argument('--wvl_batch_size', default=14, type=int, help="Number of wavelengths per microbatch per rank.")
+    parser.add_argument('--wvl_stride', default=1, type=int,
+                        help="Wavelength subsampling stride per step. "
+                             "1=use all wavelengths, 2=randomly sample half, 5=sample 1/5, etc. "
+                             "Higher values = faster training. Each step samples different random subset.")
     parser.add_argument('--optics_layer_lr', default=0.1, type=float)
     parser.add_argument('--optics_class_lr', default=0.05, type=float)
     parser.add_argument('--weight_decay', default=0.0, type=float)

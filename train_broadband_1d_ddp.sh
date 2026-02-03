@@ -10,6 +10,7 @@ OPTICS_LAYER_LR=0.1
 OPTICS_CLASS_LR=0.1
 T_MAX=5000
 WVL_BATCH_SIZE=14
+WVL_STRIDE=1
 TAU_START=0.5
 TAU_END=0.5
 HARD_START=0.0
@@ -54,6 +55,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node $NPROC_PER_NODE train_broadban
 --optics_class_lr $OPTICS_CLASS_LR \
 --T_max $T_MAX \
 --wvl_batch_size $WVL_BATCH_SIZE \
+--wvl_stride $WVL_STRIDE \
 --tau_start $TAU_START \
 --tau_end $TAU_END \
 --hard_start $HARD_START \
