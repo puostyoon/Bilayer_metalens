@@ -513,7 +513,7 @@ def train(args, local_rank):
             # ----- Wavelength microbatching with DDP no_sync -----
             # Each rank processes its local wavelength subset
             # Use no_sync() for all but the last microbatch to avoid expensive allreduce per microbatch
-            local_wvl_batches = list(batch_iterator(local_training_wvls, param.wvl_batch_size))
+            local_wvl_batches = list(batch_iterator(local_training_wvls, args.wvl_batch_size))
             num_local_batches = len(local_wvl_batches)
 
             step_loss_accum = 0.0
@@ -582,7 +582,7 @@ def train(args, local_rank):
                         vimages = vimages.to(device)
                         vdata = (vimages, vlabels)
                         # Use all wavelengths for eval on main process
-                        for wvls in batch_iterator(all_training_wvls, param.wvl_batch_size):
+                        for wvls in batch_iterator(all_training_wvls, args.wvl_batch_size):
                             eloss, _ = train_step_compute_loss(
                                 args, total_step, vdata, lut_sampler,
                                 layer1_profile_raw, layer2_profile_raw, class_logits_profile_raw,
@@ -641,6 +641,7 @@ def main():
 
     # Training config
     parser.add_argument('--n_epochs', default=1, type=int)
+    parser.add_argument('--wavelength_batch_size', default=14, type=int, help="Number of wavelengths per microbatch per rank.")
     parser.add_argument('--optics_layer_lr', default=0.1, type=float)
     parser.add_argument('--optics_class_lr', default=0.05, type=float)
     parser.add_argument('--weight_decay', default=0.0, type=float)

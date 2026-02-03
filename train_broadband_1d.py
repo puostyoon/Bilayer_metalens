@@ -393,7 +393,7 @@ def train(args):
 
             step_loss_accum = 0.0
             last_logits_2d = None
-            for wvls in batch_iterator(param.training_wvls, param.wvl_batch_size):
+            for wvls in batch_iterator(param.training_wvls, args.wvl_batch_size):
                 step_loss, logits_2d = train_step_backward(
                     args, total_step, batch_data, lut_sampler,
                     layer1_profile_raw, layer2_profile_raw, class_logits_profile_raw,
@@ -426,7 +426,7 @@ def train(args):
                     eval_loss = 0.0
                     lut_sampler.eval()
                     for vb, vdata in enumerate(testloader):
-                        for wvls in batch_iterator(param.training_wvls, param.wvl_batch_size):
+                        for wvls in batch_iterator(param.training_wvls, args.wvl_batch_size):
                             eloss, _ = train_step_backward(
                                 args, total_step, vdata, lut_sampler,
                                 layer1_profile_raw, layer2_profile_raw, class_logits_profile_raw,
@@ -483,6 +483,7 @@ def main():
 
     # Training config
     parser.add_argument('--n_epochs', default=1, type=int)
+    parser.add_argument('--wavelength_batch_size', default=14, type=int, help="Number of wavelengths per microbatch per rank.")
     parser.add_argument('--optics_layer_lr', default=0.1, type=float)
     parser.add_argument('--optics_class_lr', default=0.05, type=float)
     parser.add_argument('--weight_decay', default=0.0, type=float)

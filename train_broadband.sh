@@ -7,6 +7,7 @@ BRIGHTNESS_REGULARIZER_WEIGHT=3.0
 OPTICS_LAYER_LR=0.1
 OPTICS_CLASS_LR=0.1
 T_MAX=5000
+WAVELENGTH_BATCH_SIZE=14
 TAU_START=0.5
 TAU_END=0.5
 HARD_START=0.0
@@ -50,6 +51,7 @@ python train_broadband.py \
 --optics_layer_lr $OPTICS_LAYER_LR \
 --optics_class_lr $OPTICS_CLASS_LR \
 --T_max $T_MAX \
+--wavelength_batch_size $WAVELENGTH_BATCH_SIZE \
 --tau_start $TAU_START \
 --tau_end $TAU_END \
 --hard_start $HARD_START \

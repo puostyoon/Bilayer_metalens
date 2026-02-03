@@ -16,5 +16,4 @@ phase_init = torch.randn((1,1, R, C))
 aperture_diamter = meta_pitch * R 
 full_broadband_wvls = np.linspace(400, 700, 301)*1e-9
 training_wvls = np.linspace(480, 620, 141)*1e-9 # 450, 550, 635
-wvl_batch_size = 12
 camera_pitch = 1.0e-6  # 1.5e-6
