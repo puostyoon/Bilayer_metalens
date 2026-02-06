@@ -205,6 +205,17 @@ def train_step_backward(
     else:
         loss_total = loss_img
 
+    # Entropy bonus (to encourage wider class usage)
+    # probs
+    p = F.softmax(class_logits / max(lut_sampler.tau, 1e-8), dim=1)  # (1,K,H,W)
+
+    # per-pixel entropy (0 ~ logK)
+    ent = -(p * (p + 1e-12).log()).sum(dim=1).mean()
+
+    # entropy를 키우고 싶으면 loss에서 "빼야" 함
+    loss_total = loss_img - args.entropy_weight * ent
+    print(f"entropy bonus: {ent.item()}")
+
     if not eval:
         loss_total.backward()
 
@@ -434,6 +445,7 @@ def main():
     parser.add_argument('--ssim_loss_weight', default=1.0, type=float)
     parser.add_argument('--da_loss_weight', default=1.0, type=float)
     parser.add_argument('--brightness_regularizer_weight', default=1.0, type=float)
+    parser.add_argument('--entropy_weight', default=1.0, type=float)
 
     # Transmittance penalty (ALL wavelengths)
     parser.add_argument('--use_transmittance_penalty', action="store_true")
