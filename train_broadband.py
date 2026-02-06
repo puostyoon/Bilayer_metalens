@@ -247,14 +247,14 @@ def train(args):
 
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=args.batch_size, shuffle=True,
-        num_workers=1, pin_memory=True,
-        persistent_workers=True, prefetch_factor=1,
+        num_workers=4, pin_memory=True,
+        persistent_workers=True, prefetch_factor=4,
         drop_last=True
     )
     testloader = torch.utils.data.DataLoader(
         testset, batch_size=args.batch_size, shuffle=False,
-        num_workers=1, pin_memory=True,
-        persistent_workers=True, prefetch_factor=1
+        num_workers=4, pin_memory=True,
+        persistent_workers=True, prefetch_factor=4
     )
 
     # losses
