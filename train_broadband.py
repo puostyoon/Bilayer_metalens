@@ -58,7 +58,7 @@ def image_loss_increase_contrast(batch_data, complex_field, wvls, args, step, ev
     image = image.to(args.device)
     assert image.shape[0] == 1, f'Batch size should be 1. image shape {image.shape}'
 
-    # RGB -> Grayscale using ALL channels
+    # # RGB -> Grayscale using ALL channels
     if image.shape[1] == 3:
         # ITU-R BT.601 luma (standard luminance)
         image = (
@@ -277,9 +277,9 @@ def train(args):
     ).to(args.device)
 
     # ----- learnable parameters -----
-    # per-class xy indices
+    # per-class xy indices (intialize two layers identically)
     layer1_indices = torch.randn((1, K_lib, param.R, param.C), device=args.device, requires_grad=True)
-    layer2_indices = torch.randn((1, K_lib, param.R, param.C), device=args.device, requires_grad=True)
+    layer2_indices = layer1_indices.detach().clone().requires_grad_(True)
 
     # orderless class selection logits
     class_logits = torch.zeros((1, K_lib, param.R, param.C), device=args.device, requires_grad=True)
